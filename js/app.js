@@ -79,6 +79,30 @@
     return todayStr >= guideStartDate ? "guide" : "hunt";
   }
 
+  /* Photo checkpoint state for a leg. Null-safe: legs saved before this
+     feature existed have no photo fields and count as unconfirmed. */
+  function photoStatus(leg) {
+    if (!leg) return "unconfirmed";
+    if (leg.photoConfirmedAt != null) return "confirmed";
+    if (leg.photoSkippedByStaff) return "skipped-staff";
+    return "unconfirmed";
+  }
+
+  /* Gate to the next clue: with the checkpoint enabled, an unconfirmed photo
+     blocks advancing (a staff skip counts as passable). */
+  function canAdvanceLeg(leg, checkpointEnabled) {
+    if (!checkpointEnabled) return true;
+    return photoStatus(leg) !== "unconfirmed";
+  }
+
+  /* Fill {stop} / {city} / {chat} tokens in the checkpoint instruction. */
+  function photoInstruction(tpl, stopName, cityName, chatLabel) {
+    return String(tpl == null ? "" : tpl)
+      .split("{stop}").join(stopName)
+      .split("{city}").join(cityName)
+      .split("{chat}").join(chatLabel);
+  }
+
   global.HUNT_LOGIC = {
     normalizeAnswer: normalizeAnswer,
     answerMatches: answerMatches,
@@ -86,7 +110,10 @@
     formatElapsed: formatElapsed,
     adjustedMs: adjustedMs,
     localDateStr: localDateStr,
-    resolveMode: resolveMode
+    resolveMode: resolveMode,
+    photoStatus: photoStatus,
+    canAdvanceLeg: canAdvanceLeg,
+    photoInstruction: photoInstruction
   };
 
   /* Everything below needs a browser. */
@@ -123,7 +150,8 @@
   function newState(cityId) {
     var legs = [];
     for (var i = 0; i < CONFIG.stops.length; i++) {
-      legs.push({ solvedAt: null, misses: 0, revealed: false, bonus: null });
+      legs.push({ solvedAt: null, misses: 0, revealed: false, bonus: null,
+                  photoConfirmedAt: null, photoSkippedByStaff: false });
     }
     return {
       cityId: cityId,
@@ -443,6 +471,38 @@
     }
 
     var isLast = legNo === CONFIG.stops.length - 1;
+    var cpEnabled = !!(CONFIG.photoCheckpoint && CONFIG.photoCheckpoint.enabled);
+    var needsPhoto = cpEnabled && photoStatus(leg) === "unconfirmed";
+
+    /* Photo block: gated checkpoint card when enabled; the old passive
+       reminder when disabled. */
+    var photoHtml;
+    if (cpEnabled) {
+      var instr = photoInstruction(
+        CONFIG.photoCheckpoint.instruction, stop.name, city.name, city.chatLabel);
+      photoHtml =
+        '<div class="checkpoint-card">' +
+          '<div class="cp-head">' +
+            '<svg class="cp-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" ' +
+              'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+              '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>' +
+              '<circle cx="12" cy="13" r="4"/></svg>' +
+            "<span>Photo stop</span>" +
+          "</div>" +
+          '<p class="cp-body">' + escapeHtml(instr) + "</p>" +
+          (needsPhoto ? "" : '<p class="cp-done">Photo confirmed for this stop.</p>') +
+        "</div>";
+    } else {
+      photoHtml =
+        '<div class="photo-box"><strong>Photo time.</strong> ' + escapeHtml(CONFIG.photoReminder) + " " +
+          escapeHtml(city.chatLabel) + ".</div>";
+    }
+
+    /* One primary action: confirming the photo advances; no team skip. */
+    var advanceBtnHtml = needsPhoto
+      ? '<button class="btn btn-accent" id="photo-confirm-btn">Sent to our group chat</button>'
+      : '<button class="btn btn-accent" id="next-btn">' +
+          (isLast ? "Finish the hunt" : "Next stop") + "</button>";
 
     show(
       trailHtml(state) +
@@ -456,11 +516,10 @@
         '<a class="maps-link" href="' + mapsUrl(stop.mapsQuery) + '" target="_blank" rel="noopener">Directions to ' +
           escapeHtml(stop.name) + "</a>" +
       "</div>" +
-      '<div class="photo-box"><strong>Photo time.</strong> ' + escapeHtml(CONFIG.photoReminder) + " " +
-        escapeHtml(city.chatLabel) + ".</div>" +
+      (cpEnabled ? "" : photoHtml) +
       bonusHtml +
-      '<button class="btn btn-accent" id="next-btn">' +
-        (isLast ? "Finish the hunt" : "Next stop") + "</button>"
+      (cpEnabled ? photoHtml : "") +
+      advanceBtnHtml
     );
 
     if ($("bonus-submit")) {
@@ -479,7 +538,8 @@
       });
     }
 
-    $("next-btn").addEventListener("click", function () {
+    function advance() {
+      if (!canAdvanceLeg(leg, cpEnabled)) return; // gate: photo first
       if (stop.bonus && leg.bonus === null) leg.bonus = "skipped"; // moving on = skipping
       state.currentLeg++;
       if (state.currentLeg >= CONFIG.stops.length) {
@@ -488,19 +548,41 @@
       }
       saveState(state);
       renderCurrent();
-    });
+    }
+
+    if ($("photo-confirm-btn")) {
+      $("photo-confirm-btn").addEventListener("click", function () {
+        leg.photoConfirmedAt = state.startedAt
+          ? Math.floor((Date.now() - state.startedAt) / 1000) : 0;
+        leg.photoSkippedByStaff = false;
+        saveState(state);
+        logEvent("photo_confirmed", stop.id);
+        advance();
+      });
+    }
+    if ($("next-btn")) {
+      $("next-btn").addEventListener("click", advance);
+    }
   }
 
   function renderFinish() {
     stopTicker();
     var city = cityById(state.cityId);
     var elapsed = (state.finishedAt || Date.now()) - state.startedAt;
+    var cpEnabled = !!(CONFIG.photoCheckpoint && CONFIG.photoCheckpoint.enabled);
     var bonusCount = 0, revealedStops = [], splits = "";
+    var photoCount = 0, photoStaffStops = [], photoChips = "";
     for (var i = 0; i < CONFIG.stops.length; i++) {
       var stop = stopForLeg(state, i);
       var leg = state.legs[i];
       if (leg.bonus === "correct") bonusCount++;
       if (leg.revealed) revealedStops.push(stop.name);
+      var ps = photoStatus(leg);
+      if (ps === "confirmed") photoCount++;
+      if (ps === "skipped-staff") photoStaffStops.push(i + 1);
+      photoChips += '<span class="photo-chip ' +
+        (ps === "confirmed" ? "photo-ok" : ps === "skipped-staff" ? "photo-staff" : "photo-miss") +
+        '" title="Stop ' + (i + 1) + ": " + ps + '">' + (i + 1) + "</span>";
       var t = leg.solvedAt
         ? new Date(leg.solvedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" })
         : "—";
@@ -514,6 +596,10 @@
     var flags = "";
     if (revealedStops.length) {
       flags += '<span class="flag">Revealed answers: ' + escapeHtml(revealedStops.join(", ")) + "</span>";
+    }
+    if (photoStaffStops.length) {
+      flags += '<span class="flag">Staff skipped photo checkpoint: stops ' +
+        photoStaffStops.join(", ") + "</span>";
     }
     for (var a = 0; a < state.staffActions.length; a++) {
       flags += '<span class="flag">Staff: ' + escapeHtml(state.staffActions[a]) + "</span>";
@@ -539,6 +625,14 @@
         "</div>" +
         '<div class="stat" style="margin-bottom:12px"><span class="num adjusted">' + formatElapsed(adj) +
           '</span><span class="label">Adjusted time (−' + CONFIG.bonusMinutes + " min × " + bonusCount + " bonuses)</span></div>" +
+        (cpEnabled
+          ? '<div class="photo-row">' +
+              '<p class="photo-line">Photos confirmed: <strong>' + photoCount + " of " + CONFIG.stops.length +
+                '</strong> <span class="photo-note">(self-reported — verify in the city group chat)</span></p>' +
+              '<div class="photo-chips">' + photoChips + "</div>" +
+              '<p class="photo-legend">filled = confirmed · outline = missing · amber = staff skip</p>' +
+            "</div>"
+          : "") +
         (flags ? '<div class="flag-row">' + flags + "</div>" : "") +
         '<div class="splits"><table>' + splits + "</table></div>" +
       "</div>"
@@ -606,6 +700,7 @@
         '<input id="staff-mins" type="number" inputmode="numeric" placeholder="mins elapsed (fresh phone)"></div>' +
       '<button class="btn btn-primary" id="staff-jump">Jump team to stop N</button>' +
       '<button class="btn btn-secondary" id="staff-solve">Force-solve current stop</button>' +
+      '<button class="btn btn-secondary" id="staff-photo">Mark photo confirmed (stop N)</button>' +
       '<button class="btn btn-secondary" id="staff-reset">Reset team (erases progress)</button>' +
       '<button class="btn btn-ghost" id="modal-close">Close</button>'
     );
@@ -637,8 +732,10 @@
       for (var i = 0; i < n - 1; i++) {
         if (!s.legs[i].solvedAt) {
           s.legs[i].solvedAt = Date.now();
-          if (s.legs[i].bonus === null) s.legs[i].bonus = "skipped";
+          if (s.legs[i].bonus == null) s.legs[i].bonus = "skipped";
         }
+        // Skipped-over checkpoints are staff-skipped, never silently confirmed.
+        if (photoStatus(s.legs[i]) === "unconfirmed") s.legs[i].photoSkippedByStaff = true;
       }
       s.currentLeg = n - 1;
       s.finishedAt = null;
@@ -648,8 +745,20 @@
       var s = targetState();
       if (s.currentLeg < CONFIG.stops.length && !s.legs[s.currentLeg].solvedAt) {
         s.legs[s.currentLeg].solvedAt = Date.now();
+        if (photoStatus(s.legs[s.currentLeg]) === "unconfirmed") {
+          s.legs[s.currentLeg].photoSkippedByStaff = true;
+        }
       }
       adopt(s, "force-solved stop " + (s.currentLeg + 1));
+    });
+    $("staff-photo").addEventListener("click", function () {
+      var n = parseInt($("staff-stop").value, 10);
+      var s = targetState();
+      var leg = s.legs[n - 1];
+      leg.photoConfirmedAt = s.startedAt
+        ? Math.floor((Date.now() - s.startedAt) / 1000) : 0;
+      leg.photoSkippedByStaff = false;
+      adopt(s, "photo confirmed for stop " + n);
     });
     $("staff-reset").addEventListener("click", function () {
       var cityId = $("staff-city").value;

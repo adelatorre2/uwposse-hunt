@@ -16,7 +16,11 @@ that shaves minutes off the team's time. The app timestamps everything and ends 
 screenshot-friendly summary screen that staff verifies back at Lowell Center.
 
 Photos are deliberately **not** part of the app — teams text a selfie with their
-entire posse at each stop to their existing city group chat.
+entire posse at each stop to their existing city group chat. A **photo checkpoint**
+gates each stop: the next clue only unlocks after the team taps "Sent to our group
+chat" (self-reported; the finish screen shows a per-stop confirmation count for
+staff to verify against the chat). Configurable via `photoCheckpoint` in
+`js/config.js`.
 
 **Guide mode** (from July 15, 2026, automatic): the same site becomes the
 **UW Posse Campus Resource Guide** — every reveal card plus two dozen more

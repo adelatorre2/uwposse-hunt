@@ -83,7 +83,7 @@
       var html = "";
       for (var i = 0; i < C.cities.length; i++) {
         var city = C.cities[i];
-        var info = rowsByCity[city.id] || { solves: 0, lastEvent: "no data yet", elapsed: null, finished: false };
+        var info = rowsByCity[city.id] || { solves: 0, photos: 0, lastEvent: "no data yet", elapsed: null, finished: false };
         var dots = "";
         for (var d = 1; d <= TOTAL; d++) {
           dots += '<span class="mc-dot' + (d <= info.solves ? " done" : "") + '">' + d + "</span>";
@@ -93,6 +93,7 @@
             "<h3>Team " + esc(city.name) + (info.finished ? " — FINISHED" : "") + "</h3>" +
             '<div class="mc-dots">' + dots + "</div>" +
             '<p class="mc-meta">Last event: ' + esc(info.lastEvent) +
+              " · photos " + (info.photos || 0) +
               (info.elapsed !== null ? " · elapsed " + fmtElapsed(info.elapsed) : "") + "</p>" +
           "</div>";
       }
@@ -117,8 +118,9 @@
             var ev = cells[3] && cells[3].v;
             var elapsed = cells[4] && cells[4].v;
             if (!city) continue;
-            var info = byCity[city] || { solves: 0, lastEvent: "-", elapsed: null, finished: false };
+            var info = byCity[city] || { solves: 0, photos: 0, lastEvent: "-", elapsed: null, finished: false };
             if (ev === "solve" || ev === "reveal") info.solves++;
+            if (ev === "photo_confirmed") info.photos = (info.photos || 0) + 1;
             if (ev === "finish") { info.finished = true; info.solves = TOTAL; }
             info.lastEvent = String(ev) + " @ " + String(stop);
             info.elapsed = elapsed;

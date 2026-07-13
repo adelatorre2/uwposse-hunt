@@ -386,6 +386,71 @@ h2.screen-title {
 }
 .photo-box strong { font-family: var(--font-head); color: var(--dark-red); }
 
+/* Photo checkpoint: gates the next clue until the team confirms the selfie
+   went to their group chat. */
+.checkpoint-card {
+  background: #FDF0F0;
+  border: 2px solid #EFC7C9;
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin: 14px 0;
+}
+.checkpoint-card .cp-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 1.02rem;
+  color: var(--dark-red);
+  margin-bottom: 6px;
+}
+.checkpoint-card .cp-icon { flex: 0 0 auto; }
+.checkpoint-card .cp-body { margin: 0; font-size: .98rem; }
+.checkpoint-card .cp-done {
+  margin: 8px 0 0;
+  font-weight: 700;
+  font-size: .9rem;
+  color: var(--ok-green);
+}
+
+/* Finish screen: per-stop photo confirmation chips */
+.photo-row { margin: 0 0 12px; }
+.photo-line { margin: 0 0 8px; font-size: .95rem; }
+.photo-note { color: var(--muted); font-size: .82rem; }
+.photo-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.photo-chip {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: .8rem;
+}
+.photo-chip.photo-ok {
+  background: var(--accent);
+  color: var(--white);
+  border: 2.5px solid var(--accent);
+}
+.photo-chip.photo-miss {
+  background: var(--white);
+  color: var(--muted);
+  border: 2.5px solid var(--gray);
+}
+.photo-chip.photo-staff {
+  background: #FFF3CD;
+  color: #5c4400;
+  border: 2.5px solid #E6C24A;
+}
+.photo-legend {
+  margin: 6px 0 0;
+  font-size: .74rem;
+  color: var(--muted);
+}
+
 .maps-link {
   display: inline-flex;
   align-items: center;

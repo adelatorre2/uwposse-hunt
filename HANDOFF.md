@@ -32,13 +32,34 @@ Find `staffCode: "CHANGE-ME"` near the top and replace `CHANGE-ME` with your cod
 To use staff mode on any phone: tap the footer 5 times (or add `?staff=1` to the
 URL), enter the code. From there you can jump a team to any stop (dead-phone
 recovery — on a fresh phone you can also enter how many minutes they've been
-hunting so the clock stays fair), force-solve a stuck stop, or reset a team.
+hunting so the clock stays fair), force-solve a stuck stop, retroactively mark a
+photo checkpoint confirmed, or reset a team. Jumping or force-solving marks the
+affected stops' photo checkpoints as "staff skipped" (never silently confirmed).
 Every staff action is flagged on that team's finish screen.
 
 ## 3. Bonus minutes
 
 `bonusMinutes: 2` — minutes subtracted per correct bonus. Set `0` for pure
 fastest-time scoring.
+
+## 3b. Photo checkpoint
+
+After each solve, teams must tap **"Sent to our group chat"** before the next
+clue unlocks. It's self-reported — photos never touch the app — and the finish
+screen shows "Photos confirmed: N/8" with a per-stop row so staff can verify
+against the group chat. Settings in `js/config.js`:
+
+```js
+photoCheckpoint: {
+  enabled: true,   // false = old passive reminder, no gating
+  instruction: "Take a selfie with your ENTIRE posse in front of {stop}, then send it to {chat}."
+}
+```
+
+The instruction supports `{stop}` (stop name), `{city}` (team city), and
+`{chat}` (the per-city chat label, e.g. New York's WhatsApp). **Never put
+group-chat invite links in config** — this repo is public and a link would let
+strangers join scholars' chats. Text only.
 
 ## 4. Hunt mode vs guide mode
 
@@ -98,6 +119,13 @@ Google Form so staff can watch progress at `mission-control.html`.
 git clone https://github.com/adelatorre2/uwposse-hunt.git
 # edit files
 git add -A && git commit -m "describe the change" && git push
+```
+
+On a Mac you can also run the logic test suite (no install needed):
+
+```bash
+/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc \
+  tests/preamble.js js/config.js js/app.js tests/hunt_tests.js
 ```
 
 ## 9. Rules that must never break

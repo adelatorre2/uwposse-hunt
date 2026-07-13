@@ -64,8 +64,26 @@ window.HUNT_CONFIG = {
     phoneLabel: "608-512-7989"
   },
 
-  /* Photo reminder shown after each solve (chat label is per-city, above). */
+  /* Photo reminder shown after each solve (chat label is per-city, above).
+     Only used when photoCheckpoint.enabled is false. */
   photoReminder: "No cameras in this app — on purpose. Take a selfie with your ENTIRE posse in front of it and send it to",
+
+  /* ---------------- Photo checkpoint ----------------
+     When enabled, teams must tap "Sent to our group chat" after each solve
+     before the next clue unlocks. The tap is self-reported (photos never touch
+     the app) and is timestamped on the finish screen for staff to verify
+     against the group chat.
+
+     `instruction` supports three tokens:
+       {stop} — the stop's name          {city} — the team's city name
+       {chat} — the team's chat label from cities[] (e.g. New York's WhatsApp)
+
+     !! Never put group-chat INVITE LINKS anywhere in this file — this repo is
+     public, and a link would let strangers join scholars' chats. Text only. */
+  photoCheckpoint: {
+    enabled: true,
+    instruction: "Take a selfie with your ENTIRE posse in front of {stop}, then send it to {chat}."
+  },
 
   /* ---------------- THE 8 STOPS (loop order) ----------------
      Loop: Lowell (610 Langdon) -> east on Langdon -> Library Mall ->
