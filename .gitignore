@@ -1,0 +1,26 @@
+# ============================================================
+#  This repo is PUBLIC. Clues + public campus info ONLY.
+#  Never commit scholar names, rosters, or any personal data.
+#  The only phone number allowed is the public Posse phone.
+# ============================================================
+
+# macOS
+.DS_Store
+._*
+
+# Editor / OS cruft
+*~
+*.swp
+*.tmp
+Thumbs.db
+
+# Python (QR generation etc.)
+__pycache__/
+*.pyc
+
+# Safety net: PII-prone file types stay out of the public repo
+*.pdf
+*.docx
+*.pptx
+*.xlsx
+*.csv

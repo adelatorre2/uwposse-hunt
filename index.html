@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#C5050C" />
+  <meta name="description" content="UW Posse SOAR 2026 scavenger hunt and campus resource guide." />
+
+  <title>UW Posse Scavenger Hunt</title>
+
+  <!-- Fonts load async; the app is fully functional on system fonts if these never arrive -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@700;900&family=Red+Hat+Text:wght@400;500;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-row">
+      <h1 class="header-title">UW Posse Scavenger Hunt
+        <small id="header-subtitle">SOAR 2026</small>
+      </h1>
+      <div class="header-right">
+        <span class="team-chip" id="team-chip" style="display:none"></span>
+        <button class="rules-link" id="rules-link">Rules</button>
+      </div>
+    </div>
+    <div class="timer-strip" id="timer-strip" style="display:none">
+      <span id="timer-stop-label"></span>
+      <span class="clock" id="timer-clock">0:00</span>
+    </div>
+  </header>
+
+  <!-- Heat safety: persistent on every screen. Do not remove. -->
+  <div class="heat-banner" role="note">
+    <div class="inner">
+      <strong>It’s HOT out.</strong> Drink water and take shade breaks — pausing never
+      costs you the win. Feeling off? Stop and call the Posse phone:
+      <a href="tel:6085127989">608-512-7989</a>
+    </div>
+  </div>
+
+  <main class="container" id="app">
+    <!-- screens render here; JS is required, and that's fine for this event -->
+    <noscript>
+      <div class="status-msg">This app needs JavaScript. Ask staff for a paper clue
+      sheet, or call the Posse phone: 608-512-7989.</div>
+    </noscript>
+  </main>
+
+  <footer class="site-footer" id="site-footer">
+    <p class="foot-line">Built for UW Posse SOAR 2026 · not an official UW–Madison publication</p>
+    <p class="foot-line">Lost? Posse phone: 608-512-7989</p>
+  </footer>
+
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
