@@ -439,7 +439,7 @@ window.HUNT_CONFIG = {
       bullets: [
         "Medical care AND mental health care — most services cost nothing extra because your fees cover them.",
         "Free flu shots at campus vaccine clinics every fall.",
-        "Check-in isn't intuitive: book first online (MyUHS) or at 608-265-5600, then check in at your appointment floor."
+        "Check-in isn't intuitive: book first online through the MyUHS portal (or the phone line on their site), then check in at your appointment floor."
       ],
       link: { label: "UHS", url: "https://www.uhs.wisc.edu/" },
       verified: true // locations, services, no-cost via uhs.wisc.edu
