@@ -96,11 +96,11 @@ window.HUNT_CONFIG = {
         title: "Red Gym — your Posse home base",
         bullets: [
           "The UW Posse office is in Suite 239: study space, computers, and staff who have your back.",
-          "The building is packed with student services worth knowing — come wander it in the fall.",
+          "Also home to the Multicultural Student Center, International Student Services, and the Morgridge Center for Public Service.",
           "If you only remember one building from tonight, make it this one."
         ],
         link: { label: "Posse at UW–Madison", url: "https://posseprogram.wisc.edu/" },
-        verified: false // VERIFY: current Suite 239 + other tenants (e.g., MSC?)
+        verified: true // Suite 239 confirmed in the 2026 welcome packet; tenants via msc.wisc.edu + UW listings
       }
     },
     {
@@ -119,10 +119,11 @@ window.HUNT_CONFIG = {
         bullets: [
           "Free live music and lakefront nights all year — the Terrace is the best free show in Madison.",
           "Wisconsin Union runs events, student orgs, and student jobs here.",
-          "Wheelhouse Studios inside is an art space anyone can use."
+          "Wheelhouse Studios, the art studio on the lower level, is free for current students — ceramics, painting, printmaking, and more.",
+          "Those Sunburst chair colors are John Deere green and Allis-Chalmers orange — a nod to Wisconsin farming."
         ],
         link: { label: "Wisconsin Union", url: "https://union.wisc.edu/" },
-        verified: false // VERIFY: Wheelhouse still in Memorial Union
+        verified: true // Wheelhouse location + free student access via union.wisc.edu; chair history via Union's Terrace-chair page
       }
     },
     {
@@ -148,11 +149,12 @@ window.HUNT_CONFIG = {
         title: "Wisconsin Historical Society reading room",
         bullets: [
           "The grand 2nd-floor reading room is one of the most beautiful quiet study spots on campus.",
-          "Free to use — no history major required, just walk in with your books.",
+          "Free and open to the public — no history major required, just walk in with your books.",
+          "Hours are reduced through 2027 while the Wisconsin History Center is built, so check before you go.",
           "Bonus: Memorial Library is directly across the mall when you need the silent stacks."
         ],
         link: { label: "Wisconsin Historical Society", url: "https://www.wisconsinhistory.org/" },
-        verified: false // VERIFY: reading room floor + public access
+        verified: true // 2nd floor + public access + temporary hours via wisconsinhistory.org
       }
     },
     {
@@ -189,15 +191,15 @@ window.HUNT_CONFIG = {
       bonus: { question: "During fall and spring, how many hours a day is it open?", answers: ["24", "24 hours", "twenty four"] },
       guideCategory: "study",
       reveal: {
-        title: "College Library — the 24-hour one",
+        title: "College Library — the one that pulls all-nighters with you",
         bullets: [
-          "The only 24-hour library during fall and spring semesters.",
-          "Equipment checkout at the desk: chargers, cameras, and more.",
-          "The Design Lab helps with media and visual projects; the Writing Center lives upstairs in Helen C. White.",
+          "Open 24 hours a day, five nights a week (Sun–Thu) during fall and spring — no other campus library does that.",
+          "Equipment checkout at the desk: laptops, iPads, cameras, chargers, even gaming consoles.",
+          "DesignLab helps with media and visual projects; the Writing Center lives on the 6th floor of Helen C. White.",
           "You'll be back here Thursday morning to enroll in classes."
         ],
         link: { label: "College Library", url: "https://www.library.wisc.edu/college/" },
-        verified: false // VERIFY: equipment list, Design Lab, Writing Center floor
+        verified: true // 24/5 schedule, equipment list, DesignLab, Writing Center 6171 HCW all via library.wisc.edu + writing.wisc.edu
       }
     },
     {
@@ -236,12 +238,12 @@ window.HUNT_CONFIG = {
       reveal: {
         title: "Van Vleck — Math Learning Center",
         bullets: [
-          "Free drop-in tutoring for intro math courses — no appointment needed.",
-          "Upper-level students swear by the help tables for 300+ level courses.",
+          "Free drop-in tutoring in room B224 for a long list of math courses — no appointment needed.",
+          "The Proof Table (B227) is dedicated help for proof-based 300+ level courses; upper-level students swear by it.",
           "Going early in the semester beats cramming before the midterm."
         ],
-        link: { label: "Math Learning Center", url: "https://math.wisc.edu/undergraduate/mlc/" },
-        verified: false // VERIFY: MLC URL + 300-level table name
+        link: { label: "Math Learning Center", url: "https://www.math.wisc.edu/undergraduate/mlc/" },
+        verified: true // B224 drop-in, Proof Table name + room via math.wisc.edu
       }
     },
     {
@@ -258,12 +260,12 @@ window.HUNT_CONFIG = {
       reveal: {
         title: "Chemistry Learning Center",
         bullets: [
-          "Free support for general chemistry courses — small groups, real help.",
-          "You'll likely have class in this complex freshman year.",
+          "Small-group support for general and organic chemistry (Chem 103/104 and 343/345) — apply on their site, it's worth it.",
+          "The CLC itself sits in the Medical Sciences Center next door, but this complex is where you'll likely have chem class freshman year.",
           "Last stop: now RACE back to Lowell Center!"
         ],
         link: { label: "Chemistry Learning Center", url: "https://clc.chem.wisc.edu/" },
-        verified: false // VERIFY: CLC scope + URL
+        verified: true // scope (103/104, 343/345) + Medical Sciences Center location via clc.chem.wisc.edu
       }
     }
   ],
@@ -291,95 +293,100 @@ window.HUNT_CONFIG = {
     /* --- Tutoring & academic support --- */
     {
       category: "tutoring", name: "GUTS — Greater University Tutoring Service",
-      where: "Student Activity Center, 333 East Campus Mall",
+      where: "Student Activity Center, Office 3111, 333 East Campus Mall",
       bullets: [
-        "Free peer tutoring across tons of intro courses.",
-        "Also runs study-skills and conversational-language programs.",
-        "Sign up online; drop-in options vary by semester."
+        "Free, student-run tutoring: drop-in and small-group help (biology, chemistry, psychology, sociology, and more by semester).",
+        "One-on-one study-skills consultations: time management, note-taking, exam prep.",
+        "Also runs conversational English practice."
       ],
       link: { label: "GUTS", url: "https://guts.wisc.edu/" },
-      verified: false
+      verified: true // location, services, free via guts.wisc.edu
     },
     {
       category: "tutoring", name: "Physics Learning Center",
-      where: "Chamberlin Hall",
+      where: "Rooms 2337/2338 Chamberlin Hall, 1150 University Ave",
       bullets: [
-        "Small-group help for intro physics courses.",
-        "Especially good if physics is new to you — they teach, not just answer."
+        "Free small-group learning teams and exam reviews for intro physics (103, 104, 207, 208).",
+        "Led by trained peer tutors — they teach, not just answer.",
+        "Especially good if physics is brand new to you."
       ],
-      link: { label: "Physics Learning Center", url: "https://www.physics.wisc.edu/undergrads/plc/" },
-      verified: false
+      link: { label: "Physics Learning Center", url: "https://plc.physics.wisc.edu/" },
+      verified: true // rooms, courses, free via physics.wisc.edu / plc.physics.wisc.edu
     },
     {
       category: "tutoring", name: "The Writing Center",
-      where: "Helen C. White Hall + satellite locations (incl. residence halls)",
+      where: "6171 Helen C. White Hall (6th floor), plus satellite locations",
       bullets: [
         "Free one-on-one help on any paper, at any stage — even just an outline.",
-        "Satellite locations around campus, including some residence halls.",
+        "Satellite locations around campus in addition to the main center.",
         "Book early during midterms; slots go fast."
       ],
       link: { label: "Writing Center", url: "https://writing.wisc.edu/" },
-      verified: false
+      verified: true // 6171 HCW + satellites via writing.wisc.edu
     },
     {
       category: "tutoring", name: "Undergraduate Learning Center (College of Engineering)",
-      where: "Wendt Commons area (verify building)",
+      where: "Wendt Commons, 215 N Randall Ave (drop-in on the 3rd floor)",
       bullets: [
-        "The go-to help center for engineering coursework.",
-        "Current scholars call it the best resource for engineering students."
+        "Free drop-in tutoring for 50+ engineering, math, and science courses — evenings Sun–Thu.",
+        "Current scholars call it the best resource for engineering students.",
+        "Also offers one-on-one Tutoring by Request for students who need more."
       ],
-      link: { label: "CoE Undergraduate Learning Center", url: "https://engineering.wisc.edu/" },
-      verified: false // VERIFY: exact building/URL — notes say "Wendt Commons," transcription garbled
+      link: { label: "CoE Undergraduate Learning Center", url: "https://engineering.wisc.edu/student-services/undergraduate-learning-center/" },
+      verified: true // location, courses, hours via engr.wisc.edu ULC pages
     },
     {
       category: "tutoring", name: "Engineering Student Center",
-      where: "College of Engineering (verify building)",
+      where: "College of Engineering campus",
       bullets: [
         "Community hub for engineering students — advising, orgs, and caring staff.",
-        "A good first door to knock on if you're lost in the college."
+        "Current scholars' tip: a good first door to knock on if you feel lost in the college."
       ],
       link: { label: "College of Engineering students", url: "https://engineering.wisc.edu/" },
-      verified: false
+      verified: false // UNVERIFIED: exact location/page — word-of-mouth from current scholars
     },
     {
       category: "tutoring", name: "Cross-College Advising Service (CCAS)",
       where: "Multiple locations, incl. some residence halls",
       bullets: [
-        "Advisors for students who haven't declared a major — which is most freshmen.",
-        "They help you explore without pressure; from the welcome packet."
+        "The leading campus resource for exploring majors and careers when you haven't declared — which is most freshmen.",
+        "Professional advisors who know every major and program on campus.",
+        "Recommended in your Posse welcome packet."
       ],
       link: { label: "CCAS", url: "https://ccas.wisc.edu/" },
-      verified: false
+      verified: true // description per the 2026 welcome packet; site live
     },
     {
       category: "tutoring", name: "Career Exploration Center",
-      where: "Ingraham Hall (verify)",
+      where: "114 Ingraham Hall, 1155 Observatory Dr",
       bullets: [
-        "Helps you figure out majors and careers when you genuinely don't know yet.",
-        "Low-stakes: assessments, conversations, no commitment."
+        "Career advising for undergrads still exploring majors and careers — no commitment required.",
+        "One-on-one advisor support plus self-guided major-exploration tools.",
+        "Recommended in your Posse welcome packet."
       ],
       link: { label: "Career Exploration Center", url: "https://cec.wisc.edu/" },
-      verified: false
+      verified: true // location + mission via cec.wisc.edu
     },
     {
       category: "tutoring", name: "McBurney Disability Resource Center",
-      where: "702 W Johnson St (verify)",
+      where: "702 W Johnson St, Suite 2104",
       bullets: [
-        "Accommodations for disabilities, chronic conditions, ADHD, anxiety, and more.",
-        "Start the paperwork early — accommodations aren't retroactive."
+        "Accommodations so every student gets equitable access, whatever the disability or condition.",
+        "Start the application early — accommodations aren't retroactive.",
+        "Call, text, or email to ask if you might qualify; asking costs nothing."
       ],
       link: { label: "McBurney Center", url: "https://mcburney.wisc.edu/" },
-      verified: false
+      verified: true // address + process via mcburney.wisc.edu; also linked in the welcome packet
     },
     {
       category: "tutoring", name: "Learning Support hub (all tutoring, one page)",
       where: "Online",
       bullets: [
         "The university's official directory of every tutoring and learning center.",
-        "Bookmark this — it's the master list when you need help in any course."
+        "Your Posse welcome packet points here too — bookmark it for any course."
       ],
       link: { label: "UW Learning Support", url: "https://learningsupport.wisc.edu/" },
-      verified: false
+      verified: true // referenced by the welcome packet FAQ; site live
     },
 
     /* --- Study spots & making --- */
@@ -391,28 +398,28 @@ window.HUNT_CONFIG = {
         "Where you go when you need zero distractions."
       ],
       link: { label: "Memorial Library", url: "https://www.library.wisc.edu/memorial/" },
-      verified: false
+      verified: true
     },
     {
-      category: "study", name: "Wendt Commons + CoE makerspace",
-      where: "215 N Randall Ave (verify)",
+      category: "study", name: "Wendt Commons + UW Makerspace",
+      where: "215 N Randall Ave",
       bullets: [
-        "Engineering-side study commons.",
-        "The College of Engineering makerspace lives nearby — 3D printers, tools, training."
+        "Engineering-side study commons with the ULC drop-in tutoring upstairs.",
+        "The UW Makerspace: 3D printers, laser cutters, and tools — with training so you can actually use them."
       ],
       link: { label: "UW Makerspace", url: "https://making.engr.wisc.edu/" },
-      verified: false
+      verified: true // Wendt address via ULC pages; makerspace site live
     },
     {
-      category: "study", name: "Grainger Hall (business library + interview rooms)",
+      category: "study", name: "Grainger Hall (business library + bookable rooms)",
       where: "975 University Ave",
       bullets: [
-        "Business school building with a great library.",
-        "Current scholars' tip: the dedicated interview rooms are bookable by ALL majors — use them for phone/Zoom interviews.",
-        "Quiet, professional, and underused."
+        "Business school building with a great library — open to every major.",
+        "Study rooms are reservable by any UW student with a Wiscard (up to 2 hours, book a week ahead).",
+        "Current scholars' tip: quiet, professional rooms — great for phone and Zoom interviews."
       ],
       link: { label: "Business Library", url: "https://www.library.wisc.edu/business/" },
-      verified: false // VERIFY: all-majors booking policy
+      verified: true // room-reservation policy via library.wisc.edu/business; interview use is a scholar tip
     },
     {
       category: "study", name: "Discovery Building (WID) commons",
@@ -422,63 +429,64 @@ window.HUNT_CONFIG = {
         "Coffee downstairs, whiteboards, and it's never as crowded as the libraries."
       ],
       link: { label: "Discovery Building", url: "https://wid.wisc.edu/" },
-      verified: false
+      verified: false // UNVERIFIED: commons access details — popular word-of-mouth study spot
     },
 
     /* --- Health & wellbeing --- */
     {
       category: "health", name: "University Health Services (UHS)",
-      where: "333 East Campus Mall",
+      where: "333 East Campus Mall (main clinic); Lakeshore clinic in Dejope Hall 1104",
       bullets: [
-        "Medical care AND mental health care, already covered by your fees — most visits cost nothing extra.",
-        "Free flu shots every fall.",
-        "Check-in isn't intuitive: book online or by phone first, then check in at your appointment floor."
+        "Medical care AND mental health care — most services cost nothing extra because your fees cover them.",
+        "Free flu shots at campus vaccine clinics every fall.",
+        "Check-in isn't intuitive: book first online (MyUHS) or at 608-265-5600, then check in at your appointment floor."
       ],
       link: { label: "UHS", url: "https://www.uhs.wisc.edu/" },
-      verified: false
+      verified: true // locations, services, no-cost via uhs.wisc.edu
     },
     {
       category: "health", name: "Sex Out Loud",
       where: "Student Activity Center, 333 East Campus Mall",
       bullets: [
-        "Student org offering free safer-sex supplies and judgment-free education.",
-        "Workshops and one-on-one questions welcome."
+        "Student org offering free safer-sex supplies (order form online) and judgment-free education.",
+        "Workshops, events, and one-on-one questions welcome."
       ],
-      link: { label: "Sex Out Loud", url: "https://sexoutloud.rso.wisc.edu/" },
-      verified: false
+      link: { label: "Sex Out Loud (UW student org)", url: "https://win.wisc.edu/organization/sexoutloud" },
+      verified: true // services via sexoutloud.org; official UW listing on WIN
     },
     {
       category: "health", name: "The Nick & the Bakke (rec centers)",
-      where: "Nicholas Recreation Center (797 W Dayton St) & Bakke Recreation + Wellbeing Center (827 W Dayton St area — verify)",
+      where: "Nicholas Recreation Center, 797 W Dayton St; Bakke Recreation & Wellbeing Center on the lakeshore side",
       bullets: [
-        "Two huge rec centers — gym access is included with your student fees.",
-        "Group fitness classes are included for students too (current scholars' favorite).",
-        "Climbing wall, pools, courts, esports — go explore both."
+        "Gym access to both is already included in your student fees.",
+        "Group fitness classes cost extra — but every class is free to try during the first week of each semester.",
+        "Climbing wall, pools, ice rink, intramurals, esports — go explore both."
       ],
       link: { label: "Rec Well", url: "https://recwell.wisc.edu/" },
-      verified: false // VERIFY: group fitness included; Bakke address
+      verified: true // fitness-class pricing + free first week via recwell.wisc.edu
     },
 
     /* --- Food & fun --- */
     {
       category: "food", name: "The Open Seat food pantry",
-      where: "Student Activity Center, 333 East Campus Mall (verify floor)",
+      where: "Student Activity Center, 3rd floor, 333 East Campus Mall",
       bullets: [
-        "Free food pantry run by student government (ASM) for any student, no questions asked.",
-        "Groceries, produce, and essentials."
+        "Free food pantry run by student government (ASM) — every UW student is eligible, no questions asked, no income verification.",
+        "Produce, staples, and hygiene products."
       ],
-      link: { label: "The Open Seat", url: "https://www.asm.wisc.edu/resources/openseat/" },
-      verified: false
+      link: { label: "The Open Seat", url: "https://asm.wisc.edu/the-open-seat/support/" },
+      verified: true // floor + eligibility via asm.wisc.edu
     },
     {
-      category: "food", name: "Babcock Hall Dairy Store",
+      category: "food", name: "Babcock Dairy Store",
       where: "1605 Linden Dr",
       bullets: [
-        "Legendary ice cream made on campus by the dairy program.",
+        "Legendary ice cream made on campus since 1951 — the recipe hasn't changed.",
+        "Around 20 flavors at a time, made by student employees.",
         "A scoop after a long week is a UW tradition."
       ],
-      link: { label: "Babcock Dairy Store", url: "https://babcockhalldairystore.wisc.edu/" },
-      verified: false
+      link: { label: "Babcock Dairy Store", url: "https://babcockdairystore.wisc.edu/" },
+      verified: true // address + history via babcockdairystore.wisc.edu
     },
 
     /* --- Programs to know (from the welcome packet) --- */
@@ -486,41 +494,55 @@ window.HUNT_CONFIG = {
       category: "programs", name: "FIGs — First-Year Interest Groups",
       where: "Enrollment option for first-years",
       bullets: [
-        "Take 2–3 linked classes with the same ~20 students — instant study group.",
-        "Great for meeting people outside Posse in a low-pressure way."
+        "Clusters of (usually) three linked courses you take with the same small cohort — instant study group.",
+        "FIGs have been shown to boost GPAs, and every FIG class counts toward a gen-ed requirement.",
+        "Posse tip from your welcome packet: tell staff if you see one you like — they may be able to reserve a spot."
       ],
       link: { label: "FIGs", url: "https://figs.wisc.edu/" },
-      verified: false
+      verified: true // per the 2026 welcome packet + figs.wisc.edu
     },
     {
       category: "programs", name: "Undergraduate Research Scholars (URS)",
       where: "Program for first- and second-years",
       bullets: [
-        "Get paid course credit to work on real research as a freshman.",
-        "No experience required — that's the point."
+        "Earn course credit (2–3 credits) doing real research with UW faculty as a freshman.",
+        "Not just for STEM — projects exist in every discipline, and no experience is necessary.",
+        "One of the high-impact practices your Posse welcome packet encourages."
       ],
-      link: { label: "URS", url: "https://urs.wisc.edu/" },
-      verified: false
+      link: { label: "URS", url: "https://urs.ls.wisc.edu/" },
+      verified: true // per the 2026 welcome packet (urs.ls.wisc.edu)
     },
     {
       category: "programs", name: "Learning & Theme Communities",
       where: "Residence halls",
       bullets: [
-        "Live with students who share an interest or identity focus.",
-        "From the welcome packet — worth a look before housing deadlines."
+        "Live with students who share an interest — from BioHouse to Multicultural Learning Community to StartUp.",
+        "Posse Scholars have priority for these communities — tell Posse staff if you want one.",
+        "One of the high-impact practices from your welcome packet."
       ],
-      link: { label: "Living Learning Communities", url: "https://www.housing.wisc.edu/residence-halls/learning-communities/" },
-      verified: false
+      link: { label: "Living Learning Communities", url: "https://www.housing.wisc.edu/undergraduate/communities/" },
+      verified: true // priority + options per the 2026 welcome packet; URL is housing's current communities page
+    },
+    {
+      category: "programs", name: "Scholarships beyond Posse",
+      where: "Online",
+      bullets: [
+        "Your Posse Scholarship covers tuition — housing, books, and other expenses are on you, and more aid exists.",
+        "The welcome packet's advice: apply for other UW scholarships you may be eligible for.",
+        "Start at the official scholarships page (and remember FAFSA is required every year)."
+      ],
+      link: { label: "UW scholarships", url: "https://financialaid.wisc.edu/types-of-aid/scholarships/" },
+      verified: true // per the 2026 welcome packet FAQ
     },
     {
       category: "programs", name: "CoE research mentorship program",
       where: "College of Engineering",
       bullets: [
         "Newer research mentorship program in the College of Engineering.",
-        "Current scholars say it beats URS for engineering students — word-of-mouth tip; ask the Engineering Student Center."
+        "Current scholars say it beats URS for engineering students — word-of-mouth tip; ask at the Engineering Student Center."
       ],
       link: { label: "College of Engineering", url: "https://engineering.wisc.edu/" },
-      verified: false // word-of-mouth from current scholars; name not confirmed
+      verified: false // UNVERIFIED: program name — word-of-mouth from current scholars
     },
 
     /* --- Posse --- */
@@ -528,12 +550,12 @@ window.HUNT_CONFIG = {
       category: "posse", name: "UW Posse Program office",
       where: "Red Gym, Suite 239, 716 Langdon St",
       bullets: [
-        "Your home base: study space, computers, staff, and your people.",
-        "Posse phone (call/text): 608-512-7989.",
-        "Bookmark the program site for events and staff contacts."
+        "Your home base: computer space, study space, and Posse staff.",
+        "UW–Madison hosts the largest Posse program in the country — 160–180 scholars on campus.",
+        "Posse phone (call/text): 608-512-7989. Bookmark the program site for events and staff contacts."
       ],
       link: { label: "posseprogram.wisc.edu", url: "https://posseprogram.wisc.edu/" },
-      verified: false
+      verified: true // suite, scale, site all per the 2026 welcome packet
     }
   ],
 
