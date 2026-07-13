@@ -764,6 +764,9 @@
     if (mode === "guide") {
       $("rules-link").style.display = "none";
       $("header-subtitle").textContent = "Campus Resource Guide";
+      // The heat banner is hunt-day safety copy; hide it in guide mode.
+      var hb = document.querySelector(".heat-banner");
+      if (hb) hb.style.display = "none";
       renderGuide();
       return;
     }
