@@ -667,3 +667,77 @@ h2.screen-title {
   .modal-scrim { align-items: center; }
   .modal { border-radius: var(--radius); }
 }
+
+/* ---------------- Practice mode ---------------- */
+.practice-ribbon {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: #FFF3CD;
+  border-bottom: 2px solid #E6C24A;
+  color: #5c4400;
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: .85rem;
+  letter-spacing: .06em;
+  text-align: center;
+  padding: 8px 16px;
+}
+
+/* ---------------- Sync-start lobby ---------------- */
+.countdown {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: clamp(2.6rem, 16vw, 4rem);
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  margin: 10px 0 4px;
+  line-height: 1;
+}
+.waiting-note {
+  color: var(--muted);
+  font-size: .88rem;
+  margin: 8px 0 0;
+}
+.late-note {
+  text-align: center;
+  color: var(--muted);
+  font-size: .85rem;
+  margin: -8px 0 12px;
+}
+
+/* ---------------- Hydration break overlay ----------------
+   Overlays the current screen (never replaces it), so a half-typed
+   answer underneath survives the break. */
+.hydration-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba(18, 18, 18, .55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.hydration-inner {
+  background: #EAF4FB;
+  border: 3px solid #14607F;
+  color: #0e2f40;
+  border-radius: var(--radius);
+  max-width: 420px;
+  width: 100%;
+  padding: 28px 22px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+.hydration-inner svg { color: #14607F; }
+.hydration-inner h2 {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 1.5rem;
+  margin: 10px 0 8px;
+}
+.hydration-inner p { margin: 0 0 18px; font-size: 1.02rem; }
+.hydration-inner .btn { background: #14607F; color: var(--white); }
+.hydration-inner .btn:hover { background: #0e4a63; }
+.hydration-inner .btn[disabled] { background: #14607F; }

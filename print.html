@@ -55,6 +55,9 @@
     }
     var rules = "";
     for (var r = 0; r < C.rules.length; r++) rules += "<li>" + esc(C.rules[r]) + "</li>";
+    if (C.hydration && C.hydration.enabled) {
+      rules += "<li>Take a water break every " + C.hydration.intervalMinutes + " minutes.</li>";
+    }
 
     var html = "";
     for (var c = 0; c < C.cities.length; c++) {

@@ -22,6 +22,16 @@ chat" (self-reported; the finish screen shows a per-stop confirmation count for
 staff to verify against the chat). Configurable via `photoCheckpoint` in
 `js/config.js`.
 
+Three event-day systems ride along:
+
+- **Synchronized start** — `sync.startAt` in config puts every team in a
+  countdown lobby and anchors all clocks to the same wall instant, so the
+  race is fair even if a phone opens late (staff can force-start one phone).
+- **Hydration breaks** — every 30 minutes of race time, a full-screen water
+  break pauses every team simultaneously (configurable, heat-safety feature).
+- **Practice rounds** — `?mode=practice` runs a fully-labeled test round in a
+  separate storage namespace that never touches real team state and never logs.
+
 **Guide mode** (from July 15, 2026, automatic): the same site becomes the
 **UW Posse Campus Resource Guide** — every reveal card plus two dozen more
 verified campus resources, grouped by category with filter tabs.

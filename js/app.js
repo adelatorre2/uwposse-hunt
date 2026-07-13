@@ -103,6 +103,63 @@
       .split("{chat}").join(chatLabel);
   }
 
+  /* Synchronized start: the scheduled epoch (ms), or null when unset or
+     unparseable. startAt is a LOCAL time string (no timezone suffix) so it
+     resolves in the phone's zone. Elapsed time anchors to THIS, not a tap. */
+  function syncStartEpoch(syncCfg) {
+    if (!syncCfg || !syncCfg.startAt) return null;
+    var t = Date.parse(syncCfg.startAt);
+    return isNaN(t) ? null : t;
+  }
+
+  /* Milliseconds until the scheduled start (0 when passed or no schedule). */
+  function syncRemainingMs(nowMs, epoch) {
+    if (epoch == null) return 0;
+    var d = epoch - nowMs;
+    return d > 0 ? d : 0;
+  }
+
+  /* Practice rounds save under a separate namespace so test runs can never
+     touch (or resume as) a real team's state. */
+  function storageKey(prefix, cityId, isPractice) {
+    return prefix + (isPractice ? "practice:" : "") + cityId;
+  }
+
+  /* Hydration: has elapsed crossed a new intervalMinutes mark? Returns
+     { mark, show } for the LATEST crossed mark (never stacks), or null.
+     show=false when the mark is older than staleMs (phone was backgrounded
+     past it) — the caller records it and moves on without interrupting. */
+  function hydrationCheck(elapsedMs, lastMark, intervalMinutes, staleMs) {
+    if (!intervalMinutes || intervalMinutes <= 0 || elapsedMs == null) return null;
+    var intervalMs = intervalMinutes * 60000;
+    var mark = Math.floor(elapsedMs / intervalMs);
+    if (mark < 1 || mark <= (lastMark || 0)) return null;
+    var age = elapsedMs - mark * intervalMs;
+    return { mark: mark, show: age < staleMs };
+  }
+
+  /* Staff "force start now": anchor this phone's clock to the press moment
+     (dinner ran long, etc). Flagged on the finish screen. */
+  function applyForceStart(s, nowMs) {
+    s.startedAt = nowMs;
+    s.syncedStart = false;
+    s.forceStarted = true;
+    return s;
+  }
+
+  /* Fill legacy saves (pre-v2) with defaults so they resume cleanly. */
+  var STATE_VERSION = 2;
+  function migrateState(s) {
+    if (!s) return s;
+    if (s.hydrationMark == null) s.hydrationMark = 0;
+    if (s.syncedStart == null) s.syncedStart = false;
+    if (s.joinedLate == null) s.joinedLate = false;
+    if (s.forceStarted == null) s.forceStarted = false;
+    if (!s.staffActions) s.staffActions = [];
+    s.version = STATE_VERSION;
+    return s;
+  }
+
   global.HUNT_LOGIC = {
     normalizeAnswer: normalizeAnswer,
     answerMatches: answerMatches,
@@ -113,7 +170,13 @@
     resolveMode: resolveMode,
     photoStatus: photoStatus,
     canAdvanceLeg: canAdvanceLeg,
-    photoInstruction: photoInstruction
+    photoInstruction: photoInstruction,
+    syncStartEpoch: syncStartEpoch,
+    syncRemainingMs: syncRemainingMs,
+    storageKey: storageKey,
+    hydrationCheck: hydrationCheck,
+    applyForceStart: applyForceStart,
+    migrateState: migrateState
   };
 
   /* Everything below needs a browser. */
@@ -124,26 +187,30 @@
      ======================================================================= */
 
   var LS_PREFIX = "uwposse-hunt-v1:";
-  var ACTIVE_KEY = LS_PREFIX + "active-city";
+  var isPractice = false; // set during boot (?practice=1 + staff code)
+
+  function activeKey() {
+    return storageKey(LS_PREFIX, "active-city", isPractice);
+  }
 
   function loadState(cityId) {
     try {
-      var raw = localStorage.getItem(LS_PREFIX + cityId);
-      return raw ? JSON.parse(raw) : null;
+      var raw = localStorage.getItem(storageKey(LS_PREFIX, cityId, isPractice));
+      return raw ? migrateState(JSON.parse(raw)) : null;
     } catch (e) { return null; }
   }
 
   function saveState(state) {
     try {
-      localStorage.setItem(LS_PREFIX + state.cityId, JSON.stringify(state));
-      localStorage.setItem(ACTIVE_KEY, state.cityId);
+      localStorage.setItem(storageKey(LS_PREFIX, state.cityId, isPractice), JSON.stringify(state));
+      localStorage.setItem(activeKey(), state.cityId);
     } catch (e) { /* storage full/blocked: app still works for this session */ }
   }
 
   function clearState(cityId) {
     try {
-      localStorage.removeItem(LS_PREFIX + cityId);
-      if (localStorage.getItem(ACTIVE_KEY) === cityId) localStorage.removeItem(ACTIVE_KEY);
+      localStorage.removeItem(storageKey(LS_PREFIX, cityId, isPractice));
+      if (localStorage.getItem(activeKey()) === cityId) localStorage.removeItem(activeKey());
     } catch (e) {}
   }
 
@@ -154,12 +221,17 @@
                   photoConfirmedAt: null, photoSkippedByStaff: false });
     }
     return {
+      version: STATE_VERSION,
       cityId: cityId,
-      startedAt: null,     // set when "Start the hunt" is tapped
+      startedAt: null,     // anchored to sync.startAt when set, else the tap
       finishedAt: null,
       currentLeg: 0,       // 0..7 in play; 8 = finished
       legs: legs,
-      staffActions: []
+      staffActions: [],
+      hydrationMark: 0,    // last hydration interval acknowledged/skipped
+      syncedStart: false,  // clock anchored to the scheduled start
+      joinedLate: false,   // opened after startAt (skipped the lobby)
+      forceStarted: false  // staff start override on this phone
     };
   }
 
@@ -201,6 +273,7 @@
 
   /* ---------------- Optional logging (P2; ships disabled) ---------------- */
   function logEvent(eventName, stopId) {
+    if (isPractice) return; // test rounds never pollute the event log
     var cfg = CONFIG.logging;
     if (!cfg || !cfg.enabled || !cfg.formActionUrl) return;
     try {
@@ -248,10 +321,90 @@
 
   function startTicker() {
     stopTicker();
-    timerInterval = setInterval(updateClock, 1000);
+    timerInterval = setInterval(function () {
+      updateClock();
+      checkHydration();
+    }, 1000);
   }
   function stopTicker() {
     if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  }
+
+  /* ---------------- Hydration breaks ----------------
+     Marks anchor to startedAt (wall-anchored via sync), so every team pauses
+     at the same moment. Never on the lobby (no startedAt) or finish (ticker
+     stopped); never stacks (latest mark only); marks older than 5 minutes
+     (backgrounded phone) are recorded silently instead of interrupting.
+     The overlay sits on TOP of the current screen, so a half-typed answer
+     underneath is preserved. */
+  var HYDRATION_STALE_MS = 5 * 60000;
+  var hydrationVisible = false;
+
+  function checkHydration() {
+    var cfg = CONFIG.hydration;
+    if (!cfg || !cfg.enabled || hydrationVisible) return;
+    if (mode !== "hunt" || !state || !state.startedAt || state.finishedAt) return;
+    if (state.currentLeg >= CONFIG.stops.length) return;
+    var res = hydrationCheck(
+      Date.now() - state.startedAt, state.hydrationMark,
+      cfg.intervalMinutes, HYDRATION_STALE_MS);
+    if (!res) return;
+    if (res.show) {
+      showHydration(res.mark, false);
+    } else {
+      // Stale (phone was away past the mark): record and move on quietly.
+      state.hydrationMark = res.mark;
+      saveState(state);
+    }
+  }
+
+  function showHydration(mark, isPreview) {
+    if (hydrationVisible) return;
+    hydrationVisible = true;
+    var cfg = CONFIG.hydration;
+    if (navigator.vibrate) { try { navigator.vibrate([200, 100, 200]); } catch (e) {} }
+    if (!isPreview) {
+      logEvent("hydration_shown",
+        state && state.currentLeg < CONFIG.stops.length ? stopForLeg(state, state.currentLeg).id : "-");
+    }
+
+    var overlay = document.createElement("div");
+    overlay.className = "hydration-overlay";
+    overlay.id = "hydration-overlay";
+    overlay.innerHTML =
+      '<div class="hydration-inner">' +
+        '<svg viewBox="0 0 24 24" width="44" height="44" aria-hidden="true" fill="none" ' +
+          'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+          '<path d="M12 2.7 6.8 9.4a6.5 6.5 0 1 0 10.4 0z"/></svg>' +
+        "<h2>Hydration break</h2>" +
+        "<p>" + escapeHtml(cfg.message) + "</p>" +
+        '<button class="btn btn-primary" id="hydration-dismiss" disabled>We drank</button>' +
+      "</div>";
+    document.body.appendChild(overlay);
+
+    var waitLeft = Math.max(0, Math.floor(cfg.minDismissSeconds || 0));
+    var btn = $("hydration-dismiss");
+    function label() {
+      btn.textContent = waitLeft > 0 ? "We drank (" + waitLeft + ")" : "We drank";
+      btn.disabled = waitLeft > 0;
+    }
+    label();
+    var cdInterval = setInterval(function () {
+      waitLeft--;
+      if (waitLeft <= 0) { waitLeft = 0; clearInterval(cdInterval); }
+      label();
+    }, 1000);
+
+    btn.addEventListener("click", function () {
+      if (waitLeft > 0) return;
+      clearInterval(cdInterval);
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      hydrationVisible = false;
+      if (!isPreview && state) {
+        state.hydrationMark = mark;
+        saveState(state);
+      }
+    });
   }
 
   /* ---------------- Screens ---------------- */
@@ -311,36 +464,74 @@
     }
   }
 
+  /* The scheduled start epoch for THIS session (practice skips the gate:
+     practice rounds start on team pick, anchored to that tap). */
+  function activeSyncEpoch() {
+    return isPractice ? null : syncStartEpoch(CONFIG.sync);
+  }
+
+  /* Start the clock. With a synchronized start the clock is anchored to the
+     scheduled instant — never to the tap — so every team races the same time.
+     A phone that opens well after startAt is flagged joinedLate so the clue
+     screen can note when the clock actually started. */
+  function beginHunt(st) {
+    var epoch = activeSyncEpoch();
+    if (epoch != null) {
+      st.startedAt = epoch;
+      st.syncedStart = true;
+      st.joinedLate = Date.now() - epoch > 10000; // >10s past T-0
+    } else {
+      st.startedAt = Date.now();
+    }
+    state = st;
+    saveState(state);
+    logEvent("start", stopForLeg(state, 0).id);
+    startTicker();
+    renderCurrent();
+  }
+
   function renderConfirm() {
     var city = cityById(pendingCityId);
     if (!city) { renderLanding(); return; }
     setAccent(city.accent);
-    var firstStop = CONFIG.stops[stopIndexForLeg(city.startOffset, 0, CONFIG.stops.length)];
     var existing = loadState(pendingCityId);
+    var epoch = activeSyncEpoch();
+    var pending = syncRemainingMs(Date.now(), epoch) > 0;
     var resumeNote = existing && existing.startedAt
       ? '<div class="status-msg">Heads up: this phone already has a hunt in progress for Team ' +
         escapeHtml(city.name) + ". Starting fresh will erase it; Resume picks up where it left off.</div>"
       : "";
+    // Stop 1's name stays hidden until the clock runs — the clue reveals it.
+    var startLabel = pending
+      ? "Lock in Team " + escapeHtml(city.name)
+      : "Start the hunt";
     show(
       '<div class="card">' +
         '<h2 class="screen-title">You’re Team ' + escapeHtml(city.name) + "</h2>" +
-        '<p class="lede">You’ll visit the same 8 stops as everyone — your loop starts at <strong>' +
-          escapeHtml(firstStop.name) + "</strong> (stop " + (city.startOffset + 1) + " on the loop) and wraps around.</p>" +
+        '<p class="lede">You’ll visit the same 8 stops as everyone — your loop starts at stop ' +
+          (city.startOffset + 1) + " and wraps around. The first clue tells you where.</p>" +
+        (pending
+          ? '<p class="lede">Every posse starts at exactly the same moment: <strong>' +
+            startTimeLabel(epoch) + "</strong>. Lock in and the first clue unlocks itself.</p>"
+          : "") +
         resumeNote +
         (existing && existing.startedAt
           ? '<button class="btn btn-accent" id="resume-btn">Resume the hunt</button>' +
             '<button class="btn btn-secondary" id="start-btn">Start over (erases progress)</button>'
-          : '<button class="btn btn-accent" id="start-btn">Start the hunt</button>') +
+          : '<button class="btn btn-accent" id="start-btn">' + startLabel + "</button>") +
         '<button class="btn btn-ghost" id="back-btn">Back</button>' +
       "</div>"
     );
     $("start-btn").addEventListener("click", function () {
-      state = newState(pendingCityId);
-      state.startedAt = Date.now();
-      saveState(state);
-      logEvent("start", stopForLeg(state, 0).id);
-      startTicker();
-      renderCurrent();
+      var st = newState(pendingCityId);
+      if (syncRemainingMs(Date.now(), activeSyncEpoch()) > 0) {
+        // Locked in early: wait in the lobby for the synchronized start.
+        state = st;
+        saveState(state);
+        renderLobby();
+      } else {
+        beginHunt(st);
+      }
     });
     if ($("resume-btn")) {
       $("resume-btn").addEventListener("click", function () {
@@ -350,6 +541,64 @@
       });
     }
     $("back-btn").addEventListener("click", function () {
+      pendingCityId = null;
+      setAccent(null);
+      renderLanding();
+    });
+  }
+
+  function startTimeLabel(epoch) {
+    return new Date(epoch).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  }
+
+  /* LOBBY: countdown + rules recap after team pick; auto-advances to clue 1
+     at the scheduled instant. The countdown recomputes from Date.now() each
+     tick — no accumulated intervals, so background/foreground stays exact. */
+  var lobbyInterval = null;
+  function stopLobbyTicker() {
+    if (lobbyInterval) { clearInterval(lobbyInterval); lobbyInterval = null; }
+  }
+  function renderLobby() {
+    stopLobbyTicker();
+    var epoch = activeSyncEpoch();
+    if (syncRemainingMs(Date.now(), epoch) <= 0) { beginHunt(state); return; }
+    var city = cityById(state.cityId);
+    var rulesHtml = "";
+    for (var i = 0; i < CONFIG.rules.length; i++) {
+      rulesHtml += "<li>" + escapeHtml(CONFIG.rules[i]) + "</li>";
+    }
+    show(
+      '<div class="card" style="text-align:center">' +
+        '<p class="stop-kicker">Locked in</p>' +
+        '<h2 class="screen-title">Team ' + escapeHtml(city.name) + " — ready to run</h2>" +
+        '<p class="lede">Every posse starts at exactly the same moment. Your first clue unlocks automatically at <strong>' +
+          startTimeLabel(epoch) + "</strong>.</p>" +
+        '<div class="countdown" id="countdown" aria-live="off">–:––</div>' +
+        '<p class="waiting-note">Keep this page open. Hydrate now — it’s hot out there.</p>' +
+      "</div>" +
+      '<div class="card">' +
+        '<h2 class="screen-title">While you wait — the rules</h2>' +
+        '<ol class="rules-list">' + rulesHtml + "</ol>" +
+        '<p class="lede" style="margin:8px 0 0">Remember: at every stop, a photo with your ENTIRE posse goes to ' +
+          escapeHtml(city.chatLabel) + ".</p>" +
+      "</div>" +
+      '<button class="btn btn-ghost" id="unlock-back">Not your team? Switch</button>'
+    );
+    function tick() {
+      var left = syncRemainingMs(Date.now(), epoch);
+      var el = $("countdown");
+      if (el) el.textContent = formatElapsed(left);
+      if (left <= 0) {
+        stopLobbyTicker();
+        beginHunt(state);
+      }
+    }
+    tick();
+    lobbyInterval = setInterval(tick, 500);
+    $("unlock-back").addEventListener("click", function () {
+      stopLobbyTicker();
+      clearState(state.cityId);
+      state = null;
       pendingCityId = null;
       setAccent(null);
       renderLanding();
@@ -377,9 +626,14 @@
       ? '<button class="btn btn-ghost" id="reveal-btn">Reveal the answer (no bonus for this stop)</button>'
       : "";
 
+    var lateNote = state.joinedLate && legNo === 0
+      ? '<p class="late-note">Clock started at ' + startTimeLabel(state.startedAt) + ".</p>"
+      : "";
+
     show(
       trailHtml(state) +
       '<p class="trail-label">Stop ' + (legNo + 1) + " of " + CONFIG.stops.length + "</p>" +
+      lateNote +
       '<div class="card">' +
         '<p class="stop-kicker">Clue ' + (legNo + 1) + "</p>" +
         '<p class="clue-text">' + escapeHtml(stop.clue) + "</p>" +
@@ -611,14 +865,18 @@
 
     show(
       '<div class="finish-banner">' +
-        "<h2>RACE BACK TO LOWELL CENTER</h2>" +
-        "<p>" + escapeHtml(CONFIG.event.homeBase) + " · " + escapeHtml(CONFIG.event.homeBaseAddress) +
-        " · show this screen to staff</p>" +
+        (isPractice
+          ? "<h2>PRACTICE — not an official result</h2>" +
+            "<p>Test round · nothing here counts</p>"
+          : "<h2>RACE BACK TO LOWELL CENTER</h2>" +
+            "<p>" + escapeHtml(CONFIG.event.homeBase) + " · " + escapeHtml(CONFIG.event.homeBaseAddress) +
+            " · show this screen to staff</p>") +
       "</div>" +
       '<div class="card">' +
         '<h2 class="screen-title">Team ' + escapeHtml(city.name) + " — hunt complete</h2>" +
         '<div class="summary-grid">' +
-          '<div class="stat"><span class="num">' + fmtClock(state.startedAt) + '</span><span class="label">Started</span></div>' +
+          '<div class="stat"><span class="num">' + fmtClock(state.startedAt) +
+            '</span><span class="label">Started' + (state.syncedStart ? " · synced start" : "") + "</span></div>" +
           '<div class="stat"><span class="num">' + fmtClock(state.finishedAt) + '</span><span class="label">Finished</span></div>' +
           '<div class="stat"><span class="num">' + formatElapsed(elapsed) + '</span><span class="label">Elapsed</span></div>' +
           '<div class="stat"><span class="num">' + bonusCount + " of " + CONFIG.stops.length + '</span><span class="label">Bonuses</span></div>' +
@@ -635,8 +893,26 @@
           : "") +
         (flags ? '<div class="flag-row">' + flags + "</div>" : "") +
         '<div class="splits"><table>' + splits + "</table></div>" +
-      "</div>"
+      "</div>" +
+      (isPractice
+        ? '<button class="btn btn-secondary" id="end-practice-btn">End practice + wipe practice data</button>'
+        : "")
     );
+    if ($("end-practice-btn")) {
+      $("end-practice-btn").addEventListener("click", endPractice);
+    }
+  }
+
+  /* Wipe all practice-namespace keys and return to the real app. Real team
+     state is never touched — practice lives under its own storage keys. */
+  function endPractice() {
+    try {
+      for (var i = 0; i < CONFIG.cities.length; i++) {
+        localStorage.removeItem(storageKey(LS_PREFIX, CONFIG.cities[i].id, true));
+      }
+      localStorage.removeItem(storageKey(LS_PREFIX, "active-city", true));
+    } catch (e) {}
+    window.location.href = window.location.pathname; // back to the real hunt
   }
 
   /* ---------------- Rules modal ---------------- */
@@ -701,6 +977,11 @@
       '<button class="btn btn-primary" id="staff-jump">Jump team to stop N</button>' +
       '<button class="btn btn-secondary" id="staff-solve">Force-solve current stop</button>' +
       '<button class="btn btn-secondary" id="staff-photo">Mark photo confirmed (stop N)</button>' +
+      '<button class="btn btn-secondary" id="staff-force-start">Force start now (this phone)</button>' +
+      '<button class="btn btn-secondary" id="staff-hydrate">Preview hydration break</button>' +
+      (isPractice
+        ? '<button class="btn btn-secondary" id="staff-practice-end">End practice + wipe practice data</button>'
+        : '<button class="btn btn-secondary" id="staff-practice">Start practice round</button>') +
       '<button class="btn btn-secondary" id="staff-reset">Reset team (erases progress)</button>' +
       '<button class="btn btn-ghost" id="modal-close">Close</button>'
     );
@@ -722,6 +1003,7 @@
       saveState(s);
       state = s;
       closeModal();
+      stopLobbyTicker(); // a staff adoption supersedes any pending lobby
       startTicker();
       renderCurrent();
     }
@@ -760,6 +1042,26 @@
       leg.photoSkippedByStaff = false;
       adopt(s, "photo confirmed for stop " + n);
     });
+    $("staff-force-start").addEventListener("click", function () {
+      // Dinner ran long etc: anchor THIS phone's clock to right now.
+      var cityId = $("staff-city").value;
+      var s = loadState(cityId) || newState(cityId);
+      applyForceStart(s, Date.now());
+      adopt(s, "staff start override");
+      logEvent("start", stopForLeg(s, 0).id);
+    });
+    $("staff-hydrate").addEventListener("click", function () {
+      closeModal();
+      showHydration(0, true); // preview: never records a mark
+    });
+    if ($("staff-practice")) {
+      $("staff-practice").addEventListener("click", function () {
+        window.location.href = window.location.pathname + "?mode=practice";
+      });
+    }
+    if ($("staff-practice-end")) {
+      $("staff-practice-end").addEventListener("click", endPractice);
+    }
     $("staff-reset").addEventListener("click", function () {
       var cityId = $("staff-city").value;
       if (!window.confirm("Erase ALL progress for this team?")) return;
@@ -858,7 +1160,22 @@
   /* ---------------- Boot ---------------- */
   function boot() {
     var params = new URLSearchParams(window.location.search);
-    mode = resolveMode(params.get("mode"), localDateStr(new Date()), CONFIG.event.guideStartDate);
+    var qmode = params.get("mode");
+
+    /* Practice: a hunt round in a separate storage namespace, no sync gate,
+       no logging, labeled everywhere. Real team state is never touched. */
+    if (qmode === "practice") {
+      isPractice = true;
+      mode = "hunt";
+      $("header-subtitle").textContent = "Practice round";
+      var ribbon = document.createElement("div");
+      ribbon.className = "practice-ribbon";
+      ribbon.textContent = "PRACTICE — results don't count";
+      var heatEl = document.querySelector(".heat-banner");
+      if (heatEl && heatEl.parentNode) heatEl.parentNode.insertBefore(ribbon, heatEl.nextSibling);
+    } else {
+      mode = resolveMode(qmode, localDateStr(new Date()), CONFIG.event.guideStartDate);
+    }
 
     $("rules-link").addEventListener("click", openRules);
 
@@ -882,15 +1199,22 @@
 
     if (params.get("staff") === "1") promptStaff();
 
-    /* Resume if this device has an active hunt */
+    /* Resume if this device has an active hunt (or a pre-start lobby) */
     var activeCity = null;
-    try { activeCity = localStorage.getItem(ACTIVE_KEY); } catch (e) {}
+    try { activeCity = localStorage.getItem(activeKey()); } catch (e) {}
     if (activeCity) {
       var saved = loadState(activeCity);
       if (saved && saved.startedAt) {
         state = saved;
         startTicker();
         renderCurrent();
+        return;
+      }
+      if (saved && !saved.startedAt && activeSyncEpoch() != null) {
+        // Locked in before the synchronized start: back to the lobby
+        // (renderLobby begins the hunt immediately if T-0 has passed).
+        state = saved;
+        renderLobby();
         return;
       }
     }

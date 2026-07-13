@@ -61,6 +61,48 @@ The instruction supports `{stop}` (stop name), `{city}` (team city), and
 group-chat invite links in config** — this repo is public and a link would let
 strangers join scholars' chats. Text only.
 
+## 3c. Practice rounds (test runs)
+
+Open the site with **`?mode=practice`** on the URL (or use "Start practice
+round" in the staff panel). Practice rounds:
+
+- save under a **separate storage namespace** — they never read or touch a
+  real team's progress on the same phone;
+- skip the synchronized-start lobby (they start the moment you pick a team);
+- never send logging events;
+- show an amber **PRACTICE** ribbon on every screen, and the finish screen
+  says "PRACTICE — not an official result."
+
+To leave: tap **"End practice + wipe practice data"** (staff panel or the
+practice finish screen). That erases only the practice copies.
+
+## 3d. Synchronized start
+
+`sync.startAt` in `js/config.js` (e.g. `"2026-07-14T18:05:00"`, local Madison
+time, **no timezone suffix**) makes every team's clock start at the same
+instant: teams pick their city, wait in a countdown lobby, and clue 1 unlocks
+automatically. Scoring elapsed = now − startAt for everyone, so a phone that
+opens late skips the lobby and still races the same clock (it shows "Clock
+started at 6:05 PM").
+
+- **To change or remove the time:** edit `sync.startAt` (set `null` to go
+  back to start-on-tap). **Config edits take ~2–5 minutes to reach phones**
+  via GitHub Pages, and phones must reload — change it by ~5:30 PM on event
+  day, or don't push at all and instead use…
+- **Dinner ran long?** Staff panel → **"Force start now (this phone)"** —
+  anchors that one phone's clock to the moment you press it and flags the
+  finish screen with "staff start override."
+
+## 3e. Hydration breaks
+
+`hydration` in `js/config.js`: every `intervalMinutes` of race time, every
+phone shows a full-screen water-break interlude (the clock is shared, so all
+teams pause simultaneously — nobody loses ground). The dismiss button unlocks
+after `minDismissSeconds`. Set `enabled: false` to turn the whole thing off.
+Test it instantly with staff panel → "Preview hydration break." A phone that
+was asleep past a break mark skips it quietly if the mark is more than 5
+minutes old.
+
 ## 4. Hunt mode vs guide mode
 
 Automatic: hunt through `huntDate` (2026-07-14), guide from `guideStartDate`

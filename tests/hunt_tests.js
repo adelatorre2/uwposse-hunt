@@ -148,6 +148,71 @@ try { emojiRe = new RegExp("[\\u{1F000}-\\u{1FAFF}\\u{2600}-\\u{27BF}\\u{2B00}-\
 catch (e) { emojiRe = null; }
 ok(emojiRe ? !emojiRe.test(JSON.stringify(C)) : true, "no emoji codepoints anywhere in config");
 
+
+/* --- practice namespace isolation --- */
+ok(L.storageKey("uwposse-hunt-v1:", "chicago", false) === "uwposse-hunt-v1:chicago",
+   "real storage key unchanged from v1 format");
+ok(L.storageKey("uwposse-hunt-v1:", "chicago", true) === "uwposse-hunt-v1:practice:chicago",
+   "practice key lives in its own namespace");
+ok(L.storageKey("uwposse-hunt-v1:", "chicago", true) !== L.storageKey("uwposse-hunt-v1:", "chicago", false),
+   "practice writes can never touch real keys");
+ok(L.storageKey("uwposse-hunt-v1:", "active-city", true) !== L.storageKey("uwposse-hunt-v1:", "active-city", false),
+   "practice active-city pointer is separate too");
+
+/* --- synchronized start --- */
+var localEpoch = new Date(2026, 6, 14, 18, 5, 0).getTime(); // device-local 6:05 PM
+ok(L.syncStartEpoch({ startAt: "2026-07-14T18:05:00" }) === localEpoch,
+   "startAt parses as device-local time");
+ok(L.syncStartEpoch(null) === null, "sync absent = legacy behavior");
+ok(L.syncStartEpoch({}) === null, "sync without startAt = legacy behavior");
+ok(L.syncStartEpoch({ startAt: null }) === null, "startAt null = legacy behavior");
+ok(L.syncStartEpoch({ startAt: "not a date" }) === null, "malformed startAt = legacy behavior");
+ok(L.syncStartEpoch(C.sync) === localEpoch, "config sync.startAt parses to Jul 14 6:05 PM local");
+
+ok(L.syncRemainingMs(localEpoch - 90000, localEpoch) === 90000, "lobby gating: 90s before start");
+ok(L.syncRemainingMs(localEpoch, localEpoch) === 0, "lobby gating: T-0 opens the hunt");
+ok(L.syncRemainingMs(localEpoch + 1, localEpoch) === 0, "post-startAt join skips the lobby");
+ok(L.syncRemainingMs(1000, null) === 0, "no schedule = no lobby");
+/* wall-anchored elapsed: startedAt = startAt, so a phone joining 7 min late
+   already owes 7 minutes */
+ok(L.formatElapsed((localEpoch + 7 * 60000) - localEpoch) === "7:00",
+   "wall-anchored elapsed counts from startAt, not the tap");
+
+/* --- hydration mark-crossing --- */
+var MIN = 60000, STALE = 5 * MIN;
+ok(L.hydrationCheck(29 * MIN, 0, 30, STALE) === null, "no break before the first mark");
+var h1 = L.hydrationCheck(30 * MIN + 10000, 0, 30, STALE);
+ok(h1 && h1.mark === 1 && h1.show === true, "fresh mark 1 shows");
+var h2 = L.hydrationCheck(36 * MIN, 0, 30, STALE);
+ok(h2 && h2.mark === 1 && h2.show === false, "stale mark (>5 min old) is skipped, not shown");
+ok(L.hydrationCheck(31 * MIN, 1, 30, STALE) === null, "acknowledged mark never re-fires");
+var h3 = L.hydrationCheck(65 * MIN, 0, 30, STALE);
+ok(h3 && h3.mark === 2, "backgrounded past two marks: only the latest fires (never stacks)");
+ok(L.hydrationCheck(61 * MIN, 1, 30, STALE).show === true, "second mark shows fresh after first was dismissed");
+ok(L.hydrationCheck(45 * MIN, 0, 0, STALE) === null, "intervalMinutes 0 disables");
+ok(L.hydrationCheck(45 * MIN, 0, null, STALE) === null, "missing interval disables");
+
+/* --- staff force start --- */
+var fs = L.applyForceStart({ startedAt: null, syncedStart: true, forceStarted: false }, 1234567);
+ok(fs.startedAt === 1234567 && fs.forceStarted === true && fs.syncedStart === false,
+   "force start anchors clock to press moment and flags the override");
+
+/* --- legacy save migration (pre-v2 resume) --- */
+var legacy = { cityId: "la", startedAt: 111, finishedAt: null, currentLeg: 3,
+               legs: [{ solvedAt: 1, misses: 0, revealed: false, bonus: null }],
+               staffActions: [] };
+var mig = L.migrateState(legacy);
+ok(mig.version === 2, "state version bumped to 2 on load");
+ok(mig.hydrationMark === 0 && mig.syncedStart === false && mig.joinedLate === false &&
+   mig.forceStarted === false, "legacy save resumes with safe defaults");
+ok(mig.startedAt === 111 && mig.currentLeg === 3, "legacy progress untouched by migration");
+ok(L.migrateState(null) === null, "migrate null-safe");
+
+/* --- new config integrity --- */
+ok(C.hydration && C.hydration.enabled === true && C.hydration.intervalMinutes === 30 &&
+   C.hydration.minDismissSeconds === 20 && C.hydration.message.length > 0,
+   "hydration config complete");
+
 print("");
 print(failures === 0 ? "ALL TESTS PASSED" : failures + " FAILURES");
 if (failures > 0) throw new Error(failures + " test failures");

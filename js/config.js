@@ -85,6 +85,38 @@ window.HUNT_CONFIG = {
     instruction: "Take a selfie with your ENTIRE posse in front of {stop}, then send it to {chat}."
   },
 
+  /* ---------------- Synchronized start ----------------
+     Guarantees every team's clock starts at the same instant. Teams pick
+     their city, land in a lobby with a live countdown, and clue 1 unlocks
+     automatically at startAt. Elapsed time for scoring is now - startAt for
+     ALL teams (wall-anchored) -- a phone that opens late skips the lobby and
+     still races the same clock.
+
+     startAt is a LOCAL time string (no timezone suffix) -- phones at the
+     event are in America/Chicago, so 18:05 means 6:05 PM Madison time.
+     Set startAt to null (or delete the block) for the old behavior: each
+     team's clock starts when they tap Start.
+
+     !! Config edits take ~2-5 minutes to reach phones via GitHub Pages.
+     Change this by ~5:30 PM on event day, or use the staff panel's
+     "Force start now (this phone)" instead. */
+  sync: {
+    startAt: "2026-07-14T18:05:00"
+  },
+
+  /* ---------------- Hydration breaks ----------------
+     Full-screen "water break" interlude each time a team's elapsed clock
+     crosses a multiple of intervalMinutes. Because the clock is wall-anchored
+     (see sync above), every team pauses at the same moment -- nobody loses
+     time relative to anyone else. The dismiss button stays disabled for
+     minDismissSeconds so the break actually happens. */
+  hydration: {
+    enabled: true,
+    intervalMinutes: 30,
+    minDismissSeconds: 20,
+    message: "Water break. Every team is pausing right now -- the clock treats everyone the same. Drink up."
+  },
+
   /* ---------------- THE 8 STOPS (loop order) ----------------
      Loop: Lowell (610 Langdon) -> east on Langdon -> Library Mall ->
      up Bascom -> back via University Ave.
