@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hunt Clue Sheets (print fallback)</title>
+  <style>
+    /* Paper fallback: open this page and hit Print. One sheet per city, in
+       that city's visit order, plus the rules. If phones die on Tuesday,
+       this is the hunt. */
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Red Hat Text", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: #121212; margin: 0; font-size: 12.5pt; line-height: 1.45;
+    }
+    .sheet { padding: 0.6in 0.7in; page-break-after: always; }
+    .sheet:last-child { page-break-after: auto; }
+    h1 {
+      font-size: 20pt; margin: 0 0 2pt;
+      border-bottom: 4pt solid #C5050C; padding-bottom: 6pt;
+    }
+    .sub { color: #444; margin: 4pt 0 14pt; font-size: 10.5pt; }
+    h2 { font-size: 13pt; margin: 14pt 0 6pt; }
+    ol.rules { margin: 0 0 10pt; padding-left: 20pt; font-size: 10.5pt; }
+    ol.rules li { margin-bottom: 4pt; }
+    .heat {
+      border: 2pt solid #C5050C; padding: 8pt 10pt; font-size: 10.5pt;
+      margin: 8pt 0 14pt; font-weight: 500;
+    }
+    ol.clues { margin: 0; padding-left: 22pt; }
+    ol.clues li { margin-bottom: 14pt; }
+    .clue-text { font-weight: 700; }
+    .answer-line { color: #555; font-size: 10pt; margin-top: 4pt; }
+    .bonus { color: #333; font-size: 10pt; margin-top: 3pt; font-style: italic; }
+    .phone { font-weight: 700; }
+    @media screen {
+      body { background: #eee; }
+      .sheet { background: #fff; max-width: 8.5in; margin: 16px auto; box-shadow: 0 2px 10px rgba(0,0,0,.2); }
+      .print-hint { text-align:center; padding: 12px; font-size: 11pt; }
+    }
+    @media print { .print-hint { display: none; } }
+  </style>
+</head>
+<body>
+  <p class="print-hint">Press Cmd/Ctrl+P to print. One page per team, clues in that team's order.</p>
+  <div id="sheets"></div>
+
+  <script src="js/config.js"></script>
+  <script>
+  (function () {
+    "use strict";
+    var C = window.HUNT_CONFIG;
+    function esc(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+    var rules = "";
+    for (var r = 0; r < C.rules.length; r++) rules += "<li>" + esc(C.rules[r]) + "</li>";
+
+    var html = "";
+    for (var c = 0; c < C.cities.length; c++) {
+      var city = C.cities[c];
+      var clues = "";
+      for (var leg = 0; leg < C.stops.length; leg++) {
+        var stop = C.stops[(city.startOffset + leg) % C.stops.length];
+        clues +=
+          "<li>" +
+            '<div class="clue-text">' + esc(stop.clue) + "</div>" +
+            '<div class="answer-line">Answer: ______________________________________________</div>' +
+            (stop.bonus ? '<div class="bonus">Bonus (-' + C.bonusMinutes + ' min): ' + esc(stop.bonus.question) +
+              " ______________________</div>" : "") +
+          "</li>";
+      }
+      html +=
+        '<div class="sheet">' +
+          "<h1>" + esc(C.event.title) + " — Team " + esc(city.name) + "</h1>" +
+          '<p class="sub">' + esc(C.event.subtitle) + " · paper fallback · your loop starts at clue 1 below and the loop order is already set for your team</p>" +
+          "<h2>Rules</h2><ol class=\"rules\">" + rules + "</ol>" +
+          '<div class="heat">' + esc(C.heatBanner.text) + ' <span class="phone">' + esc(C.event.possePhone) + "</span></div>" +
+          "<h2>Clues (complete in order)</h2>" +
+          '<ol class="clues">' + clues + "</ol>" +
+          '<p class="sub">Finished? RACE back to ' + esc(C.event.homeBase) + ", " + esc(C.event.homeBaseAddress) +
+          ". Show a staff member this sheet. Lost? Call/text <span class=\"phone\">" + esc(C.event.possePhone) + "</span>.</p>" +
+        "</div>";
+    }
+    document.getElementById("sheets").innerHTML = html;
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hunt Mission Control</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    /* Staff-only page. Reads the Google Form responses sheet via the public
+       gviz endpoint. Requires config.logging enabled + missionControl.sheetId,
+       and the responses sheet shared as "anyone with the link: viewer". */
+    .mc-board { max-width: 680px; margin: 0 auto; padding: 18px 16px 40px; }
+    .mc-row {
+      background: var(--white); border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-sm); padding: 16px; margin-bottom: 12px;
+      border-left: 6px solid var(--row-accent, var(--gray));
+    }
+    .mc-row h3 { font-family: var(--font-head); font-weight: 900; margin: 0 0 6px; }
+    .mc-meta { color: var(--muted); font-size: .85rem; margin: 6px 0 0; }
+    .mc-dots { display: flex; gap: 6px; margin-top: 8px; }
+    .mc-dot {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 2.5px solid var(--gray); background: var(--white);
+      font-size: .65rem; display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-head); font-weight: 700; color: var(--muted);
+    }
+    .mc-dot.done { background: var(--row-accent); border-color: var(--row-accent); color: #fff; }
+    .mc-status { text-align: center; color: var(--muted); font-size: .85rem; padding: 10px; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-row">
+      <h1 class="header-title">Mission Control<small>staff only — hunt progress board</small></h1>
+    </div>
+  </header>
+
+  <main class="mc-board" id="board">
+    <p class="mc-status" id="status">Loading…</p>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script>
+  (function () {
+    "use strict";
+    var C = window.HUNT_CONFIG;
+    var board = document.getElementById("board");
+    var TOTAL = C.stops.length;
+
+    function esc(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    if (!C.missionControl || !C.missionControl.sheetId) {
+      board.innerHTML =
+        '<div class="card"><h2 class="screen-title">Not wired up yet</h2>' +
+        "<p>This board needs the P2 logging recipe from HANDOFF.md: create the Google Form, " +
+        "link a responses Sheet, share it as anyone-with-link viewer, and paste the sheet ID into " +
+        "<code>missionControl.sheetId</code> in js/config.js. Until then, teams still play fine — " +
+        "this page is optional.</p></div>";
+      return;
+    }
+
+    var GVIZ = "https://docs.google.com/spreadsheets/d/" + C.missionControl.sheetId +
+               "/gviz/tq?tqx=out:json";
+
+    function cityName(id) {
+      for (var i = 0; i < C.cities.length; i++) if (C.cities[i].id === id) return C.cities[i].name;
+      return id;
+    }
+    function cityAccent(id) {
+      for (var i = 0; i < C.cities.length; i++) if (C.cities[i].id === id) return C.cities[i].accent;
+      return "#888";
+    }
+
+    function fmtElapsed(sec) {
+      sec = parseInt(sec, 10) || 0;
+      var m = Math.floor(sec / 60), s = sec % 60;
+      return m + ":" + (s < 10 ? "0" : "") + s;
+    }
+
+    function render(rowsByCity, note) {
+      var html = "";
+      for (var i = 0; i < C.cities.length; i++) {
+        var city = C.cities[i];
+        var info = rowsByCity[city.id] || { solves: 0, lastEvent: "no data yet", elapsed: null, finished: false };
+        var dots = "";
+        for (var d = 1; d <= TOTAL; d++) {
+          dots += '<span class="mc-dot' + (d <= info.solves ? " done" : "") + '">' + d + "</span>";
+        }
+        html +=
+          '<div class="mc-row" style="--row-accent:' + city.accent + '">' +
+            "<h3>Team " + esc(city.name) + (info.finished ? " — FINISHED" : "") + "</h3>" +
+            '<div class="mc-dots">' + dots + "</div>" +
+            '<p class="mc-meta">Last event: ' + esc(info.lastEvent) +
+              (info.elapsed !== null ? " · elapsed " + fmtElapsed(info.elapsed) : "") + "</p>" +
+          "</div>";
+      }
+      html += '<p class="mc-status">' + esc(note) + "</p>";
+      board.innerHTML = html;
+    }
+
+    function poll() {
+      fetch(GVIZ, { cache: "no-store" })
+        .then(function (r) { return r.text(); })
+        .then(function (text) {
+          // gviz wraps JSON in setResponse(...); strip it.
+          var json = JSON.parse(text.replace(/^[\s\S]*?setResponse\(/, "").replace(/\);?\s*$/, ""));
+          var rows = (json.table && json.table.rows) || [];
+          var byCity = {};
+          for (var r = 0; r < rows.length; r++) {
+            var cells = rows[r].c || [];
+            // Columns: 0 timestamp, then form fields in creation order:
+            // 1 city, 2 stop, 3 event, 4 elapsedSeconds (see HANDOFF.md)
+            var city = cells[1] && cells[1].v;
+            var stop = cells[2] && cells[2].v;
+            var ev = cells[3] && cells[3].v;
+            var elapsed = cells[4] && cells[4].v;
+            if (!city) continue;
+            var info = byCity[city] || { solves: 0, lastEvent: "-", elapsed: null, finished: false };
+            if (ev === "solve" || ev === "reveal") info.solves++;
+            if (ev === "finish") { info.finished = true; info.solves = TOTAL; }
+            info.lastEvent = String(ev) + " @ " + String(stop);
+            info.elapsed = elapsed;
+            byCity[city] = info;
+          }
+          render(byCity, "Updated " + new Date().toLocaleTimeString() +
+                 " — refreshes every " + (C.missionControl.pollSeconds || 30) + "s");
+        })
+        .catch(function () {
+          render({}, "Couldn't reach the sheet — retrying. Check sharing is 'anyone with link: viewer'.");
+        });
+    }
+
+    poll();
+    setInterval(poll, (C.missionControl.pollSeconds || 30) * 1000);
+  })();
+  </script>
+</body>
+</html>
